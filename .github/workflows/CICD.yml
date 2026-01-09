@@ -185,4 +185,4 @@ jobs:
               fi
 
               echo "Running new container"
-              docker run -dp 80:80 --name pythonapp ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ needs.promote.outputs.BASE_TAG }}
+              docker run -dp 80:81 --name pythonapp ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ needs.promote.outputs.BASE_TAG }}
