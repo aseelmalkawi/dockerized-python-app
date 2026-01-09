@@ -1,0 +1,175 @@
+name: Python App
+
+on:
+    workflow_dispatch:
+
+jobs:
+    prepare: 
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4
+
+        - name: Setup python
+          uses: actions/setup-python@v4
+          with:
+            python-version: "3.11"
+
+        - name: Install Poetry
+          run: |
+            pip install poetry
+            poetry config virtualenvs.create false
+
+        - name: Install dependencies
+          run: poetry install --no-interaction --no-root
+
+        - name: Extract Version
+          run : | 
+              chmod +x common/version_extract.sh
+              ./common/version_extract.sh
+
+        - name: Debugging the extracted Version
+          run: echo $VERSION
+
+        - name: Upload Version artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: version
+            path: version.yaml
+
+    build:
+      runs-on: ubuntu-latest
+      needs: prepare
+      steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4
+
+        - name: Download artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: version
+
+        - name: Load version into enviroment
+          run: |
+            chmod +x common/load_version.sh
+            ./common/load_version.sh
+
+        - name: Package app artifact
+          run: |
+            chmod +x common/package_artifact.sh
+            ./common/package_artifact.sh
+
+        - name: Upload wheel artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: app-build
+            path: artifacts/
+
+    docker:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+
+            - name: Download artifact
+              uses: actions/download-artifact@v4
+              with:
+                name: version
+
+            - name: Load version into enviroment
+              run: |
+                chmod +x common/load_version.sh
+                ./common/load_version.sh
+
+            - name: Debugging the extracted Version
+              run: echo $VERSION
+
+            - name: Download artifact 
+              uses: actions/download-artifact@v4
+              with:
+                name: app-build
+
+            - name : Config AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ secrets.AWS_REGION }}   
+                
+            - name: Login into AWS ecr
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Build and push Image 
+              uses: docker/build-push-action@v6 
+              with:
+                context: .
+                file: ./Dockerfile
+                push: true
+                tags: ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ env.VERSION }}
+    
+    promote:
+      runs-on: ubuntu-latest
+      needs: docker
+      outputs:
+        BASE_TAG: ${{ steps.promote.outputs.BASE_TAG }}
+      steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4
+
+        - name : Config AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}   
+            
+        - name: Login into AWS ecr
+          uses: aws-actions/amazon-ecr-login@v2
+
+        - name: Promote script
+          id: promote
+          run: |
+            chmod +x common/promote.sh
+            ./common/promote.sh
+          env:
+            AWS_REGION: ${{ secrets.AWS_REGION }}
+            ECR_URI: ${{ secrets.ECR_URI }}
+      
+    deploy:
+      runs-on: ubuntu-latest
+      needs: promote
+      steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4
+        - name: Download artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: version
+
+        - name: Load version into enviroment
+          run: |
+            chmod +x common/load_version.sh
+            ./common/load_version.sh
+        
+        - name: SSH to the server and deploy Docker image
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.HOST }}
+            username: ${{ secrets.HOST_NAME }}
+            key: ${{ secrets.KEY }}
+            script: |
+              echo "Logging into AWS ECR"
+              aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+              | docker login --username AWS --password-stdin ${{ secrets.ECR_URI }}
+
+              echo "Pulling the Docker image"
+              docker pull ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ needs.promote.outputs.BASE_TAG }}
+
+              if docker ps -a --format '{{.Names}}' | grep -wq pythonapp; then
+                docker stop pythonapp
+                docker rm pythonapp
+              fi
+
+              echo "Running new container"
+              docker run -dp 3000:3000 --name pythonapp ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ needs.promote.outputs.BASE_TAG }}
