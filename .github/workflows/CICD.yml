@@ -119,7 +119,7 @@ jobs:
                 context: .
                 file: ./Dockerfile
                 push: true
-                tags: ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ env.VERSION }}
+                tags: ${{ secrets.ECR_URI }}/cicd-aseel-python:${{ env.VERSION }}-test
     
     promote:
       runs-on: ubuntu-latest
