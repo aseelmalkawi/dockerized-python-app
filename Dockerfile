@@ -6,7 +6,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir gunicorn
 
 # Copy the wheel artifact
-COPY dist/*.whl /app/
+COPY *.whl /app/
 
 # Install your app
 RUN pip install /app/*.whl
