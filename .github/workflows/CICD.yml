@@ -55,20 +55,19 @@ jobs:
             chmod +x common/load_version.sh
             ./common/load_version.sh
 
-        # - name: Setup python
-        #   uses: actions/setup-python@v4
-        #   with:
-        #     python-version: "3.11"
+        - name: Setup python
+          uses: actions/setup-python@v4
+          with:
+            python-version: "3.11"
 
-        # - name: Install Poetry
-        #   run: |
-        #     pip install --upgrade pip
-        #     pip install poetry
-        #     pip install --upgrade pip
-        #     poetry config virtualenvs.create false
+        - name: Install Poetry
+          run: |
+            python -m pip install --upgrade pip
+            pip install --upgrade packaging poetry
+            poetry --version
 
-        # - name: Install dependencies
-        #   run: poetry install --no-interaction --no-root
+        - name: Install dependencies
+          run: poetry install --no-interaction --no-root --only main
 
         - name: Package app artifact
           run: |
