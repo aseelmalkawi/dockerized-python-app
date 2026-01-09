@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ARTIFACT_NAME="cicd-aseel-python-${VERSION}-${GITHUB_SHA:0:7}.tgz"
+ARTIFACT_NAME="cicd-aseel-python-${VERSION}-${GITHUB_SHA:0:7}"
 # -p means to create if if it doesn't exist. Ensure the pipeline doesn't throw an error
 mkdir -p artifacts
 mkdir -p artifact-temp

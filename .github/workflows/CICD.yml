@@ -70,15 +70,13 @@ jobs:
           run: poetry install --no-interaction --no-root --only main
 
         - name: Package app artifact
-          run: |
-            chmod +x common/package_artifact.sh
-            ./common/package_artifact.sh
+          run: poetry build --format wheel
 
         - name: Upload wheel artifact
           uses: actions/upload-artifact@v4
           with:
             name: app-build
-            path: artifacts/
+            path: dist/*.whl
 
     docker:
         needs: build
