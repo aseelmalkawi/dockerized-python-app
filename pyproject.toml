@@ -3,11 +3,7 @@ name = "book-shop"
 version = "0.1.0"
 description = ""
 authors = ["Ayat <alkayedayat93@gmail.com>"]
-packages = [{ include = "book_shop" }, { include = "books" }]
-
-[tool.poetry.include]
-"templates/**" = "templates"
-"users.json" = "users.json"
+packages = [{ include = "book_shop" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"

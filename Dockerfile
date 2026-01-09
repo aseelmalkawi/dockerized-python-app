@@ -6,7 +6,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir gunicorn
 
 # Copy the wheel artifact
-COPY *.whl /app/
+COPY book_shop-0.1.0-py3-none-any.* /app/
 
 # Install your app
 RUN pip install /app/*.whl
