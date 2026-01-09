@@ -5,6 +5,9 @@ description = ""
 authors = ["Ayat <alkayedayat93@gmail.com>"]
 packages = [{ include = "book_shop" }, { include = "books" }]
 
+[tool.poetry.include]
+"templates/**" = "templates"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 Django = "^4.0.4"
