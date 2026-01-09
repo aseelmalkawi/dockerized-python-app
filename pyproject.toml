@@ -7,6 +7,7 @@ packages = [{ include = "book_shop" }, { include = "books" }]
 
 [tool.poetry.include]
 "templates/**" = "templates"
+"users.json" = "users.json"
 
 [tool.poetry.dependencies]
 python = "^3.9"
