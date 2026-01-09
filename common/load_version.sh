@@ -1,4 +1,4 @@
 #!/bin/bash
 
-VERSION=$(grep 'version' version.yaml | cut -d'"' -f2)
+VERSION=$(cat version.yaml)
 echo "VERSION=$VERSION" >> $GITHUB_ENV
